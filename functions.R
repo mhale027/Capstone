@@ -4,6 +4,7 @@ library(dplyr)
 library(RWeka)
 library(NLP)
 library(openNLP)
+library(qdap)
 library(ggplot2)
 
 set.seed(1111)
@@ -71,16 +72,26 @@ clean.ngram <- function(input) {
     input.string <<- string
 }
 
-sentence <- function(corp) {
+sentence <- function(corpus) {
     sentence.annotator <- Maxent_Sent_Token_Annotator(language = "en")
-    corpus <- as.String(corp)
-    bounds <- annotate(corpus, sentence.annotator)
+    corpus <- as.String(unlist(corpus))
+    bounds <- NLP::annotate(corpus, sentence.annotator)
     corpus <- corpus[bounds]
+    corpus <- tolower(gsub("[^a-zA-Z\ ]", "",corpus))
     corpus <- gsub("^", "<s> ", corpus)
     corpus <- gsub("$", " <s>", corpus)
+    vc <<- VCorpus(VectorSource(PlainTextDocument(corpus)))
 }
 
-
+spell.check <- function(corpus) {
+    sen <- as.character(sentence(corpus)[[1]])
+    mis <- NULL
+    for (i in 1:length(sen)) {
+        mis[i] <- which_misspelled(sen[i], suggest = TRUE)
+    }
+    
+    
+}
 
 
 
