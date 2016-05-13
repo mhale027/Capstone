@@ -6,6 +6,8 @@ library(NLP)
 library(openNLP)
 library(qdap)
 library(ggplot2)
+library(doParallel)
+registerDoParallel(cores = 4)
 
 set.seed(1111)
 
@@ -36,6 +38,7 @@ sam <- c(blogs1, twitter1, news1)
 sam <- gsub("[^a-zA-Z\ ]", "", sam)
 sam <- gsub("\ +", " ", sam)
 sam <- tolower(sam)
+sam <- sam[!is.na(sam)]
 
 vc <- VCorpus(VectorSource(sam))
 
@@ -63,6 +66,7 @@ quad.sum <- apply(quad, 1, sum)
 tokens <- names(uni.sum)
 bi.tokens <- names(bi.sum)
 bi.count <- sum(as.numeric(bi.sum))
+b1 <- b2 <- t1 <- t2 <- t3 <- q1 <- q2 <- q3 <- q4 <- NULL
 for (i in 1:length(bi.tokens)){
     b1[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[1]
     b2[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[2]
@@ -94,17 +98,15 @@ t.quad <- mutate(t.quad, count = as.numeric(quad.sum), prob = count / quad.count
 
 
 
+unigrams <- mutate(data.frame(tokens), count = as.numeric(uni.sum), prob = count/sum(as.numeric(uni.sum)))
+bigrams <- mutate(data.frame(bi.tokens), count = as.numeric(bi.sum), prob = count/sum(as.numeric(bi.sum)))
+trigrams <- mutate(data.frame(tri.tokens), count = as.numeric(tri.sum), prob = count/sum(as.numeric(tri.sum)))
+quadgrams <- mutate(data.frame(quad.tokens), count = as.numeric(quad.sum), prob = count/sum(as.numeric(quad.sum)))
 
-
-V <- length(uni.sum)
-
-unigrams <- cbind(tokens, mutate(data.frame(term = names(uni.sum)), count = as.numeric(uni.sum), prob = count/sum(as.numeric(uni.sum))))
-bigrams <- data.frame(names(bi.sum), count = as.numeric(bi.sum), prob = count/sum(as.numeric(bi.sum)))
-trigrams <- data.frame(names(tri.sum), count = as.numeric(tri.sum), prob = count/sum(as.numeric(tri.sum)))
-quadgrams <- data.frame(names(quad.sum), count = as.numeric(quad.sum), prob = count/sum(as.numeric(quad.sum)))
-
-
-
+V.uni <- nrow(unigrams)
+V.bi <- nrow(bigrams)
+V.tri <- nrow(trigrams)
+V.quad <- nrow(quadgrams)
 
 
 
@@ -127,35 +129,110 @@ sample.text <- function(blogs, twitter, news) {
 
 
 
-clean.ngram <- function(input) {
+clean.input <- function(input) {
     string <- gsub("^", "<s> ", input)
     string <- gsub("$", " <s>", string)
     string <- unlist(tolower(stri_split_fixed(string, " ")))
-    string <- gsub("[^a-zA-Z\ ]", "", string)
+    string <- gsub("[^a-zA-Z\ <>]|", "", string)
     string <- gsub("\ +", " ", string)
     input.string <<- string
 }
 
-sentence <- function(corpus) {
+sentence <- function(lines) {
     sentence.annotator <- Maxent_Sent_Token_Annotator(language = "en")
-    corpus <- as.String(unlist(corpus))
-    bounds <- NLP::annotate(corpus, sentence.annotator)
-    corpus <- corpus[bounds]
-    corpus <- tolower(gsub("[^a-zA-Z\ ]", "",corpus))
-    corpus <- gsub("^", "<s> ", corpus)
-    corpus <- gsub("$", " <s>", corpus)
-    vc <<- VCorpus(VectorSource(PlainTextDocument(corpus)))
+    lines <- unlist(lines)
+    bounds <- NLP::annotate(lines, sentence.annotator)
+    lines <- lines[bounds]
+    lines <- tolower(gsub("[^a-zA-Z\ ]", "",lines))
+    lines <- gsub("^", "<s> ", lines)
+    cleaned <<- gsub("$", " <s>", lines)
+    #vc <<- VCorpus(VectorSource(PlainTextDocument(lines)))
+}
+
+spell.correct <- function(word, prev, options){
+    pre <- stri_split_fixed(prev, " ")
+    uni.prob <- unigrams[unigrams$term == word,]$prob
+    df.bi <- bigrams[bigrams$term2 == word,]
+    df.tri <- trigrams[trigrams$term3 == word,]
+    df.quad <- quadgrams[quadgrams$term4 == word,]
 }
 
 spell.check <- function(corpus) {
-    sen <- as.character(sentence(corpus)[[1]])
-    mis <- NULL
+    sen <- as.String(unlist(corpus))
+    mis <- word <- position <- opt1 <- opt <- NULL
     for (i in 1:length(sen)) {
-        mis[i] <- which_misspelled(sen[i], suggest = TRUE)
+        sent <- sen[i]
+        mis <- which_misspelled(sent, suggest = TRUE)
+        
+        
+        for (j in 1:length(sent)){
+            word[j] <- unlist(stri_split_fixed(sent, " "))[j]
+            position[j] <- j
+            
+            for (k in 1:length(unlist(stri_split_fixed(mis[k,]$more.suggestions)))){
+                opt1[k] <- mis[k,]$suggestion
+                opt[k] <- unlist(stri_split_fixed(mis[k,]$more.suggestions))[k]
+                df <- arrange(filter(t.tri, term1 == word[j-1], term == word[j+1]), count)
+                if (opt1[k] %in% df$term2){
+                    word[j] <- opt1[k]
+                } else {
+                    edit.dist[k] <- adist(word[k], opt[k])
+                }
+                
+                
+            }
+            
+            
+        }
     }
     
     
 }
 
+spelling <- function() {
+    words <- arrange(unigrams, desc(count))$tokens
+#    sorted_words <- names(sort(table(strsplit(tolower(paste(readLines("http://www.norvig.com/big.txt"), collapse = " ")), "[^a-z]+")), decreasing = TRUE))
+    correct <- function(word) { c(words[ adist(word, words) <= min(adist(word, words), 2)], word)[1] }
+    
+    
+    
+    
+}
 
 
+
+
+split_text <- strsplit(tolower(raw_text), "[^a-z]+")
+# Count the number of different type of words.
+word_count <- table(split_text)
+# Sort the words and create an ordered vector with the most common type of words first.
+sorted_words <- names(sort(word_count, decreasing = TRUE))
+
+
+
+
+
+spell.check1 <- function(corpus) {
+    corpus <- gsub("[^a-zA-Z\ ']", " ", corpus)
+    corpus <- gsub("\ +", " ", corpus)
+    corpus <- unlist(stri_split_fixed(as.String(corpus), " "))
+        
+    for (k in 1:length(corpus)){
+        mis <- check_misspelled(corpus[k])
+        opt1[k] <- mis[k,]$suggestion
+        opt[k] <- unlist(stri_split_fixed(mis[k,]$more.suggestions))[k]
+        df <- arrange(filter(t.tri, term1 == word[j-1], term == word[j+1]), count)
+        if (opt1[k] %in% df$term2){
+            word[j] <- opt1[k]
+        } else {
+            edit.dist[k] <- adist(word[k], opt[k])
+        }
+        
+        
+    }
+    
+    
+}
+    
+    
+    
