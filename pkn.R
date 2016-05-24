@@ -5,11 +5,13 @@
 pkn.bi <- function(input, word){
       string <- unlist(clean.input(input))
       num <- length(string)
-      w1 <- string[num]
+      w1 <<- string[num]
+      w2 <<- string[num-1]
+      w3 <<- string[num-2]
       bi.w <- filter(t.bi, term1 == w1)
       bi.wi <- filter(t.bi, term2 == word)
       pc.wi <- nrow(bi.wi)/nrow(t.bi)
-      delta <- .5
+      delta <<- .5
       
       lambda.bi <- (delta / sum(bi.w$count)) * nrow(bi.w)
       
@@ -19,13 +21,13 @@ pkn.bi <- function(input, word){
 }
 
 pkn.tri <- function(input, word){
-      string <- unlist(clean.input(input))
-      num <- length(string)
-      w1 <- string[num]
-      w2 <- string[num-1]
+#      string <- unlist(clean.input(input))
+#      num <- length(string)
+#      w1 <- string[num]
+#      w2 <- string[num-1]
       tri.w <- filter(t.tri, term1 == w2, term2 == w1)
       tri.wi <- filter(t.tri, term3 == word)
-      delta <- .5
+#      delta <- .5
       
       lambda.tri <- (delta / sum(tri.w$count))*nrow(tri.w)
       
@@ -37,14 +39,14 @@ pkn.tri <- function(input, word){
 
 
 pkn.quad <- function(input, word){
-      string <- unlist(clean.input(input))
-      num <- length(string)
-      w1 <- string[num]
-      w2 <- string[num-1]
-      w3 <- string[num-2]
+#      string <- unlist(clean.input(input))
+#      num <- length(string)
+#      w1 <- string[num]
+#      w2 <- string[num-1]
+#      w3 <- string[num-2]
       quad.w <- filter(t.quad, term1 == w3, term2 == w2, term3 == w1)
       quad.wi <- filter(t.quad, term4 == word)
-      delta <- .5
+#      delta <- .5
       
       lambda.quad <- (delta / sum(quad.wi$count))*nrow(quad.w)
       if (sum(filter(quad.w, term4 == word)$count) != 0 & sum(filter(quad.w, term4 == word)$count) !=0) {
