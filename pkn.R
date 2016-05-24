@@ -1,5 +1,7 @@
 
 
+
+
 pkn.bi <- function(input, word){
       string <- unlist(clean.input(input))
       num <- length(string)
@@ -44,11 +46,20 @@ pkn.quad <- function(input, word){
       quad.wi <- filter(t.quad, term4 == word)
       delta <- .5
       
-      lambda.quad <- (delta / nrow(quad.wi))*nrow(quad.w)
+      lambda.quad <- (delta / sum(quad.wi$count))*nrow(quad.w)
+      if (sum(filter(quad.w, term4 == word)$count) != 0 & sum(filter(quad.w, term4 == word)$count) !=0) {
+            pkn.quad.wi <- (max(c(0, sum(filter(quad.w, term4 == word)$count)-delta)))/ 
+                  sum(filter(quad.w, term4 == word)$count) + 
+                  lambda.quad*pkn.tri(input, word)
+      } else if (is.na(pkn.tri.wi)) {
+            pkn.quad.wi <- lambda.quad*pkn.bi.wi
+      } else {
+            pkn.quad.wi <- lambda.quad*pkn.tri.wi
+      }
       
-      pkn.quad.wi <- (max(c(0, sum(filter(quad.w, term4 == word)$count)-delta)))/ 
-            sum(filter(quad.w, term4 == word)$count) + 
-            lambda.quad*pkn.tri(input, word)
+      return(pkn.quad.wi)
+      
 }
+
 
 
