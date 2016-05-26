@@ -39,8 +39,29 @@ sam <- c(blogs1, twitter1, news1)
 sam <- gsub("[^a-zA-Z\ ]", "", sam)
 sam <- gsub("\ +", " ", sam)
 sam <- tolower(sam)
-sam <- sam[!is.na(sam)]
+sam1 <- sam[!is.na(sam)]
+sam <- sentence(sam1)
 
+
+sent <- function(corpus) {
+      sentence.count <- 0
+      corpus.sentences <<- NULL
+      corpus <<- corpus[!is.na(corpus)]
+      for (i in 1:length(corpus)) {
+            
+            c.sample <<- corpus[i]
+            c.sentences <<- sentence(c.sample)
+            
+            for (j in 1:length(c.sentences)) {
+                  sentence.count <<- sentence.count + 1
+                  corpus.sentences[sentence.count] <<- c.sentences[j]
+                  
+            }
+      
+      }
+      return(corpus.sentences)
+      
+}
 #vc <- VCorpus(VectorSource(sam))
 
 #vc <- tm_map(vc, FUN=stripWhitespace)
@@ -54,10 +75,10 @@ bigramizer <- function(sam) NGramTokenizer(sam, RWeka::Weka_control(min=2, max=2
 trigramizer <- function(sam) NGramTokenizer(sam, RWeka::Weka_control(min=3, max=3))
 quadgramizer <- function(sam) NGramTokenizer(sam, RWeka::Weka_control(min=4, max=4))
 
-uni <- TermDocumentMatrix(as.Corpus(sam), control = list(tokenize = unigramizer, wordLengths=c(1,Inf)))
-bi <- TermDocumentMatrix(as.Corpus(sam), control = list(tokenize = bigramizer, wordLengths=c(1,Inf)))
-tri <- TermDocumentMatrix(as.Corpus(sam), control = list(tokenize = trigramizer,wordLengths=c(1,Inf)))
-quad <- TermDocumentMatrix(as.Corpus(sam), control = list(tokenize = quadgramizer, wordLengths=c(1,Inf)))
+uni <- TermDocumentMatrix(as.Corpus(as.character(sam)), control = list(tokenize = unigramizer, wordLengths=c(1,Inf)))
+bi <- TermDocumentMatrix(as.Corpus(as.character(sam)), control = list(tokenize = bigramizer, wordLengths=c(1,Inf)))
+tri <- TermDocumentMatrix(as.Corpus(as.character(sam)), control = list(tokenize = trigramizer,wordLengths=c(1,Inf)))
+quad <- TermDocumentMatrix(as.Corpus(as.character(sam)), control = list(tokenize = quadgramizer, wordLengths=c(1,Inf)))
 
 uni.sum <- apply(uni, 1, sum)
 bi.sum <- apply(bi, 1, sum)
@@ -242,20 +263,21 @@ clean.input <- function(input) {
     string <- gsub("^", "<s> ", input)
     string <- tolower(string)
     string <- unlist(stri_split_fixed(string, " "))
-    string <- gsub("[^a-zA-Z\ <>]", "", string)
+    string <- gsub("[^a-zA-Z\ (^<s>)]", "", string)
     string <- gsub("\ +", " ", string)
     input.string <<- string
 }
 
-sentence <- function(lines) {
-    sentence.annotator <- Maxent_Sent_Token_Annotator(language = "en")
-    lines <- unlist(lines)
-    bounds <- NLP::annotate(lines, sentence.annotator)
-    lines <- lines[bounds]
-    lines <- tolower(gsub("[^a-zA-Z\ ]", "",lines))
-    lines <- gsub("^", "<s> ", lines)
-    cleaned <<- gsub("$", " <s>", lines)
-    #vc <<- VCorpus(VectorSource(PlainTextDocument(lines)))
+sentence <- function(corpus) {
+      sentence.annotator <- Maxent_Sent_Token_Annotator(language = "en")
+      corpus <- as.String(unlist(corpus))
+      bounds <- NLP::annotate(corpus, sentence.annotator)
+      corpus <- corpus[bounds]
+      corpus <- gsub("[^a-zA-Z\ ]", "",corpus)
+      corpus <- gsub("^", "<s> ", corpus)
+      corpus <- gsub("$", " <s>", corpus)
+      return(corpus)
+      #    vc <<- VCorpus(VectorSource(PlainTextDocument(corpus)))
 }
 
 spell.correct <- function(word, prev, options){
