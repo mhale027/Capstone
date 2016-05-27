@@ -30,38 +30,37 @@ close(new)
 rm(new)
 
 
-blogs1 <- blogs[as.logical(rbinom(length(blogs), 1, prob = .01))]
-twitter1 <- twitter[as.logical(rbinom(length(twitter), 1, prob = .01))]
-news1 <- news[as.logical(rbinom(length(news), 1, prob = .01))]
+blogs1 <- blogs[as.logical(rbinom(length(blogs), 1, prob = .001))]
+twitter1 <- twitter[as.logical(rbinom(length(twitter), 1, prob = .001))]
+news1 <- news[as.logical(rbinom(length(news), 1, prob = .001))]
 
 
 sam <- c(blogs1, twitter1, news1)
-sam <- gsub("[^a-zA-Z\ ]", "", sam)
-sam <- gsub("\ +", " ", sam)
-sam <- tolower(sam)
 sam1 <- sam[!is.na(sam)]
 sam <- sentence(sam1)
+sam <- gsub("[^a-zA-Z\ (^<s>)]", "", sam)
+sam <- gsub("\ +", " ", sam)
+sam <- tolower(sam)
 
-
-sent <- function(corpus) {
-      sentence.count <- 0
-      corpus.sentences <<- NULL
-      corpus <<- corpus[!is.na(corpus)]
-      for (i in 1:length(corpus)) {
-            
-            c.sample <<- corpus[i]
-            c.sentences <<- sentence(c.sample)
-            
-            for (j in 1:length(c.sentences)) {
-                  sentence.count <<- sentence.count + 1
-                  corpus.sentences[sentence.count] <<- c.sentences[j]
-                  
-            }
-      
-      }
-      return(corpus.sentences)
-      
-}
+#sent <- function(corpus) {
+#      sentence.count <- 0
+#      corpus.sentences <<- NULL
+#      corpus <<- corpus[!is.na(corpus)]
+#      for (i in 1:length(corpus)) {
+#            
+#            c.sample <<- corpus[i]
+#            c.sentences <<- sentence(c.sample)
+#            
+#            for (j in 1:length(c.sentences)) {
+#                  sentence.count <<- sentence.count + 1
+#                  corpus.sentences[sentence.count] <<- c.sentences[j]
+#                  
+#            }
+#      
+#      }
+#      return(corpus.sentences)
+#      
+#}
 #vc <- VCorpus(VectorSource(sam))
 
 #vc <- tm_map(vc, FUN=stripWhitespace)
@@ -135,8 +134,8 @@ tokens <- names(uni.sum)
 bi.tokens <- names(bi.sum)
 bi.count <- sum(as.numeric(bi.sum))
 for (i in 1:length(bi.tokens)){
-      b1[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[1]
-      b2[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[2]
+            b1[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[1]
+            b2[i] <- unlist(stri_split_fixed(bi.tokens[i], " "))[2]
 }
 t.bi <- data.frame(term1 = b1, term2 = b2)
 t.bi <- mutate(t.bi, count = as.numeric(bi.sum), prob = as.numeric(bi.sum)/bi.count)
@@ -240,9 +239,9 @@ prep <- function(input) {
       quad.w <<- filter(t.quad, term1 == w3, term2 == w2, term3 == w1)
       tri.w <<- filter(t.tri, term1 == w2, term2 == w1)
       bi.w <<- filter(t.bi, term1 == w1)
-      quad.choices <- head(arrange(quad.w$term4, desc(count)),10)
-      tri.choices <- head(arrange(tri.w$term3, desc(count)),6)
-      bi.choices <- head(arrange(bi.w$term2, desc(count)),4)
+      quad.choices <- head(arrange(quad.w, desc(count))$term4,10)
+      tri.choices <- head(arrange(tri.w, desc(count))$term3,6)
+      bi.choices <- head(arrange(bi.w, desc(count))$term2,4)
       choices <<- c(quad.chioces, tri.choices, bi.chioces)
 }
 

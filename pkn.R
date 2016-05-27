@@ -3,21 +3,33 @@
 prep <- function(input) {
       string <<- clean.input(input)
       num <<- length(string)
+      if (string[num] == "") {
+            string <<- string[-num]
+            num <<- length(string)
+      }
       if (num >= 3) {
             w1 <<- string[num]
             w2 <<- string[num-1]
             w3 <<- string[num-2]
-      } else { 
+      } else if (num == 2) {
+            w1 <<- string[num]
+            w2 <<- string[num-1]
+      } else if (num == 1) {
+            w1 <<- string[num]
+      } else {
             print("Please input 3 or more words")
             break 
       }
       quad.w <<- filter(t.quad, term1 == w3, term2 == w2, term3 == w1)
       tri.w <<- filter(t.tri, term1 == w2, term2 == w1)
       bi.w <<- filter(t.bi, term1 == w1)
-      quad.choices <- head(arrange(quad.w, desc(count))$term4,10)
-      tri.choices <- head(arrange(tri.w, desc(count))$term3,6)
-      bi.choices <- head(arrange(bi.w, desc(count))$term2,4)
-      choices <<- c(quad.choices, tri.choices, bi.choices)
+      bi.choices <- head(arrange(bi.w, desc(count))$term2, max(5, length(bi.w)))
+      bi.choices <<- bi.choices[-grep("<s>", bi.choices)]
+      tri.choices <- c(head(arrange(tri.w, desc(count))$term3, max(6, length(tri.w))), bi.choices)
+      tri.choices <<- bi.choices[-grep("<s>", tri.choices)]
+      quad.choices <- c(head(arrange(quad.w, desc(count))$term4, max(10, length(quad.w))), tri.choices)
+      quad.choices <<- quad.choices[-grep("<s>", bi.choices)]
+#      choices <<- c(quad.choices, tri.choices, bi.choices)
 }
 
 
@@ -92,4 +104,27 @@ pkn.quad <- function(input, word){
 }
 
 
-
+pk <- function(input) {
+      prep(input)
+      
+      probs <- NULL
+      if (num >= 4) {
+            for (i in 1:length(choices)) {
+                  probs[i] <- pkn.quad(input, choices[i])
+            }
+            prediction <<- quad.choices[which.max(probs)]
+      } else if (num == 3) {
+            for (i in 1:length(tri.choices)) {
+                  probs[i] <- pkn.tri(input, tri.choices[i])
+            }
+            prediction <<- tri.choices[which.max(probs)]
+      } else if (num == 2) {
+            for (i in 1:length(bi.choices)) {
+                  probs[i] <- pkn.bi(input, bi.choices[i])
+            }
+            prediction <<- bi.choices[which.max(probs)]
+      } else {
+            break
+      }
+      
+}
