@@ -1,8 +1,9 @@
 
-
+#
 prep <- function(input) {
       string <<- clean.input(input)
       num <<- length(string)
+      delta <<- .5
       if (string[num] == "") {
             string <<- string[-num]
             num <<- length(string)
@@ -23,12 +24,14 @@ prep <- function(input) {
       quad.w <<- filter(t.quad, term1 == w3, term2 == w2, term3 == w1)
       tri.w <<- filter(t.tri, term1 == w2, term2 == w1)
       bi.w <<- filter(t.bi, term1 == w1)
-      bi.choices <- head(arrange(bi.w, desc(count))$term2, max(5, length(bi.w)))
-      bi.choices <<- bi.choices[-grep("<s>", bi.choices)]
-      tri.choices <- c(head(arrange(tri.w, desc(count))$term3, max(6, length(tri.w))), bi.choices)
-      tri.choices <<- bi.choices[-grep("<s>", tri.choices)]
-      quad.choices <- c(head(arrange(quad.w, desc(count))$term4, max(10, length(quad.w))), tri.choices)
-      quad.choices <<- quad.choices[-grep("<s>", bi.choices)]
+      bi.choices <<- as.character(head(arrange(bi.w, desc(count))$term2, max(5, length(bi.w))))
+#      bi.choices <<- bi.choices[-grep("<s>", bi.choices)]
+      tri.choices <<- c(as.character(head(arrange(tri.w, desc(count))$term3, max(6, length(tri.w)))), bi.choices)
+#      tri.choices <<- bi.choices[-grep("<s>", tri.choices)]
+      quad.choices <<- c(as.character(head(arrange(quad.w, desc(count))$term4, max(10, length(quad.w)))), tri.choices)
+      if ("<s>" %in% quad.choices) {
+            quad.choices <<- quad.choices[-grep("<s>", quad.choices)]
+      }
 #      choices <<- c(quad.choices, tri.choices, bi.choices)
 }
 
@@ -109,8 +112,8 @@ pk <- function(input) {
       
       probs <- NULL
       if (num >= 4) {
-            for (i in 1:length(choices)) {
-                  probs[i] <- pkn.quad(input, choices[i])
+            for (i in 1:length(quad.choices)) {
+                  probs[i] <- pkn.quad(input, quad.choices[i])
             }
             prediction <<- quad.choices[which.max(probs)]
       } else if (num == 3) {
@@ -128,3 +131,63 @@ pk <- function(input) {
       }
       return(prediction)
 }
+
+
+
+
+sample.text <- function(blogs, twitter, news) {
+      set.seed(1111)
+      blogs.text <- blogs[as.logical(rbinom(length(blogs), 1, prob = .001))]
+      twitter.text <- twitter[as.logical(rbinom(length(twitter), 1, prob = .001))]
+      news.text <- news[as.logical(rbinom(length(news), 1, prob = .001))]
+      sam <<- c(blogs.text, twitter.text, news.text)
+      
+}
+
+
+
+clean.input <- function(input) {
+      string <- gsub("^", "<s> ", input)
+      string <- tolower(string)
+      string <- unlist(stri_split_fixed(string, " "))
+      string <- gsub("[^a-zA-Z\ (^<s>)]", "", string)
+      string <- gsub("\ +", " ", string)
+      input.string <<- string
+}
+
+
+sentence <- function(corpus) {
+      sentence.annotator <- Maxent_Sent_Token_Annotator(language = "en")
+      corpus <- as.String(unlist(corpus))
+      bounds <- NLP::annotate(corpus, sentence.annotator)
+      corpus <- corpus[bounds]
+      corpus <- gsub("[^a-zA-Z\ ]", "",corpus)
+      corpus <- gsub("^", "<s> ", corpus)
+      corpus <<- gsub("$", " <s>", corpus)
+      return(corpus)
+      #    vc <<- VCorpus(VectorSource(PlainTextDocument(corpus)))
+}
+
+
+
+
+
+gram.df <- function(){
+      tokens <- names(uni.sum)
+      bi.tokens <- names(bi.sum)
+      tri.tokens <- names(tri.sum)
+      quad.tokens <- names(quad.sum)
+      
+      
+      
+      bi.tok <<- lapply(bi.tokens, function(x) {stri_split_fixed(x, pattern= " ")})
+      df.bi <<- data.frame(matrix(unlist(bi.tok), ncol = 2, byrow = TRUE))
+      
+      tri.tok <<- lapply(tri.tokens, function(x) {stri_split_fixed(x, pattern= " ")})
+      df.tri <<- data.frame(matrix(unlist(tri.tok), ncol = 3, byrow = TRUE))
+      
+      quad.tok <<- lapply(quad.tokens, function(x) {stri_split_fixed(x, pattern= " ")})
+      df.quad <<- data.frame(matrix(unlist(quad.tok), ncol = 4, byrow = TRUE))
+      
+}
+
