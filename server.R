@@ -166,9 +166,15 @@ shinyServer(
             
             cleaned <- reactive({ clean.input( input$input.string ) })
             output$clean <- renderText( cleaned() )
-            prediction <- reactive({ pk( cleaned() ) })
-            output$prediction <- renderText( prediction() )
-            choices <- reactive({ prep(cleaned()) })
-            output$other.choices <- renderText( choices() )
+            
+      #      prediction <- reactive({ pk( cleaned() ) })
+            output$my.prediction <- renderText( pk( cleaned() ) )
+            
+       #     choices <- reactive({ prep( cleaned() ) })
+            output$other.choices <- renderText(  prep( cleaned() ) )
+            
+            
+            
+            
       }     
 )

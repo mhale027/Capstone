@@ -16,7 +16,7 @@ shinyUI(fluidPage(
                   h4("input"),
                   verbatimTextOutput("clean"),
                   h4("Main choice"),
-                  verbatimTextOutput("prediction"),
+                  verbatimTextOutput("my.prediction"),
                   h4("Other choices"),
                   verbatimTextOutput("other.choices")
             )
